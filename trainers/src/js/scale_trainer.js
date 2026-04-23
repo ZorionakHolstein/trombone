@@ -283,7 +283,7 @@ function ensureAudioContext(){
   return Promise.resolve();
 }
 
-async function playStartingPitch(durationMs = 2000){
+/*async function playStartingPitch(durationMs = 2000){
   if(!currentScale.length) return;
 
   await ensureAudioContext();
@@ -314,8 +314,79 @@ async function playStartingPitch(durationMs = 2000){
 
   osc.start(now);
   osc.stop(now + durationSec + 0.03);
-}
+}*/ // completely redoing playStartingPitch to make it sound *not* like shit (hopefully) -- zhao1077
 
+async function playStartingPitch(durationMs = 2000) {
+	if (!currentScale.length) return;
+	await ensureAudioContext();
+
+	const targetMidi = currentScale[0];
+	const freq = 440 + Math.pow(2, (targetMidi - 69) / 12);
+	const now = audioContext.currentTime;
+	const durationSec = durationMs / 1000;
+
+	// main oscillator
+	const oscillator = audioContext.createOscillator();
+	// harmonics
+	const real = new Float32Array([
+		0, 1.0,
+		0.9, 0.7,
+		0.5, 0.35,
+		0.25, 0.15
+	]);
+	const imag = new Float32Array(real.length);
+	const wave = audioContext.createPeriodicWave(real, imag);
+	
+	oscillator.setPeriodicWave(wave);
+	oscillator.frequency.setValueAtTime(freq, now);
+
+	// gain 
+	const gain = audioContext.createGain();
+	gain.gain.setValueAtTime(0.0001, now);
+	gain.gain.exponentialRampToValueAtTime(0.25, now + 0.08);
+	gain.gain.exponentialRampToValueAtTime(0.18, now + 0.25);
+	gain.gain.exponentialRampToValueAtTime(0.0001, now + durationSec);
+
+	// low pass filter
+	const filter = audioContext.createBiquadFilter();
+	filter.type = "lowpass";
+	filter.frequency.setValueAtTime(800, now);
+	filter.frequency.exponentialRampToValueAtTime(2200, now + 0.1);
+	filter.frequency.exponentialRampToValueAtTime(1200, now + durationSec);
+
+	// vibratoOoOoOoOoOoOoOoOoOoOo!
+	const lfo = audioContext.createOscillator();
+	const lfoGain = audioContext.createGain();
+
+	lfo.frequency.setValueAtTime(5.5, now); // this is the speed.
+	lfoGain.gain.setValueAtTime(3, now); // this is the depth in hertz
+
+	lfo.connect(lfoGain);
+	lfoGain.connect(oscillator.frequency);
+
+	// another oscillator
+	const oscillator2 = audioContext.createOscillator();
+	oscillator2.type = "sine";
+	oscillator2.frequency.setValueAtTime(freq * 2, now);
+	// ... and that oscillator's gain
+	const gain2 = audioContext.createGain();
+	gain2.gain.setValueAtTime(0.05, now);
+
+	// self explanatory.
+	oscillator.connect(filter);
+	filter.connect(gain);
+	gain.connect(audioContext.destination);
+	oscillator2.connect(gain2);
+	gain2.connect(audioContext.destination);
+
+	oscillator.start(now);
+	oscillator.stop(now + durationSec + 0.05);
+	oscillator2.start(now);
+	oscillator2.stop(now + durationSec + 0.05);
+	lfo.start(now);
+	lfo.stop(now + durationSec + 0.05);
+}
+	
 function updateLabels(){
   if(!currentScale.length){
     targetNoteLabel.textContent = "—";
