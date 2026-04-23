@@ -283,39 +283,6 @@ function ensureAudioContext(){
   return Promise.resolve();
 }
 
-/*async function playStartingPitch(durationMs = 2000){
-  if(!currentScale.length) return;
-
-  await ensureAudioContext();
-
-  const targetMidi = currentScale[0];
-  const freq = 440 * Math.pow(2, (targetMidi - 69) / 12);
-
-  const osc = audioContext.createOscillator();
-  const gain = audioContext.createGain();
-
-  osc.type = "sawtooth";
-  osc.frequency.setValueAtTime(freq, audioContext.currentTime);
-
-  const now = audioContext.currentTime;
-  const durationSec = durationMs / 1000;
-  gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.8, now + 0.02);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + durationSec);
-
-  osc.connect(gain);
-  gain.connect(audioContext.destination);
-
-  const real = new Float32Array([0, 1, 0.8, 0.6, 0.4, 0.2,
-	  			 0.1, 0.3, 0.5]);
-  const imag = new Float32Array(real.length);
-  const wave = audioContext.createPeriodicWave(real, imag);
-  osc.setPeriodicWave(wave);
-
-  osc.start(now);
-  osc.stop(now + durationSec + 0.03);
-}*/ // completely redoing playStartingPitch to make it sound *not* like shit (hopefully) -- zhao1077
-
 async function playStartingPitch(durationMs = 900) {
 	if (!currentScale.length) return;
 	await ensureAudioContext();
@@ -368,8 +335,8 @@ async function playStartingPitch(durationMs = 900) {
 
 	// another oscillator
 	const oscillator2 = audioContext.createOscillator();
-	oscillator2.type = "sine";
-	oscillator2.frequency.setValueAtTime(freq * 2, now);
+	oscillator2.type = "sawtooth";
+	oscillator2.frequency.setValueAtTime(freq, now);
 	// ... and that oscillator's gain
 	const gain2 = audioContext.createGain();
 	gain2.gain.setValueAtTime(0.05, now);
@@ -377,11 +344,20 @@ async function playStartingPitch(durationMs = 900) {
 	gain2.gain.exponentialRampToValueAtTime(0.03, now + 0.25);
 	gain2.gain.exponentialRampToValueAtTime(0.0001, now + durationSec);
 
-	// self explanatory.
+	// another low pass filter
+	const filter2 = audioContext.createBiquadFilter();
+	filter2.type = "lowpass";
+	filter2.frequency.setValueAtTime(800, now);
+	filter2.frequency.exponentialRampToValueAtTime(2200, now + 0.1);
+	filter2.frequency.exponentialRampToValueAtTime(1200, now + durationSec);
+
+	// connection graph for osc1.
 	oscillator.connect(filter);
 	filter.connect(gain);
 	gain.connect(audioContext.destination);
-	oscillator2.connect(gain2);
+	// connection graph for osc2
+	oscillator2.connect(filter2);
+	filter2.connect(gain2);
 	gain2.connect(audioContext.destination);
 
 	oscillator.start(now);
