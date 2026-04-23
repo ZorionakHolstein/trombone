@@ -285,7 +285,6 @@ function ensureAudioContext(){
 }
 
 async function playMidiNote(midi, durationMs = 900) {
-	if (!currentScale.length) return;
 	await ensureAudioContext();
 
 	const freq = 440 * Math.pow(2, (midi - 69) / 12);
@@ -473,8 +472,6 @@ function renderStaff(){
       });
     }
 
-    staveNote._noteIndex = i;
-
     return staveNote;
   });
 
@@ -489,18 +486,18 @@ function renderStaff(){
         const svg = staffEl.querySelector("svg");
         if (!svg) return;
 
-        const noteGroups = svg.querySelectorAll(".vf-note");
-        noteGroups.forEach((el, i) => {
+        const noteHeads = svg.querySelectorAll("vf-nodehead");
+        noteHeads.forEach((el, i) => {
             el.style.cursor = "pointer";
-            el.addEventListener("click", () => {
-                currentIndex = i;
-                const name = currentScaleNames[i];
+            el.addEventListener("click", (e) => {
+                e.stopPropagation();
+
                 const midi = currentScale[i];
+                const name = currentScalenames[i];
 
-                targetNoteLabel.textContent = name;
-                fingeringText.textContent = showFingeringsEl.checked ? getPosition(name) : "—";
-
+                currentIndex = i;
                 updateLabels();
+
                 renderStaff();
 
                 playMidiNote(midi).catch(console.error);
