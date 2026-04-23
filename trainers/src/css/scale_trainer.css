@@ -41,7 +41,6 @@ h1 {
 .panel {
   background:    var(--panel);
   border:        1px solid var(--line);
-  border-radius: 14px;
   padding:       16px;
   margin-bottom: 16px;
   box-shadow:    0 2px 8px rgba(0,0,0,0.05);
@@ -68,7 +67,6 @@ label {
 select, button, input[type="number"] {
   font-size:     15px;
   padding:       10px 12px;
-  border-radius: 10px;
   border:        1px solid #cbd5e1;
   background:    white;
 }
@@ -106,7 +104,6 @@ button.secondary {
 
 .pill {
   border:        1px solid var(--line);
-  border-radius: 12px;
   padding:       12px;
   background:    #fcfcff;
 }
@@ -192,7 +189,6 @@ button.secondary {
 .fingering-box {
   margin-top:       10px;
   padding:          14px;
-  border-radius:    12px;
   border:           1px solid var(--line);
   background:       #fafafa;
   font-size:        18px;
@@ -206,7 +202,6 @@ button.secondary {
 
 .progress {
   height:           14px;
-  border-radius:    999px;
   background:       #e5e7eb;
   overflow:         hidden;
   margin-top:       12px;

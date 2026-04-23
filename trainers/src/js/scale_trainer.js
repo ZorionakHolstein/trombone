@@ -486,7 +486,7 @@ function renderStaff(){
         const svg = staffEl.querySelector("svg");
         if (!svg) return;
 
-        const noteHeads = svg.querySelectorAll("vf-notehead");
+        const noteHeads = svg.querySelectorAll(".vf-notehead");
         noteHeads.forEach((el, i) => {
             el.style.cursor = "pointer";
             el.addEventListener("click", (e) => {
