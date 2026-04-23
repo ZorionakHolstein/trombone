@@ -14,6 +14,6 @@ Connect to the site on localhost on port 8000. Navigate through the index of tra
 For Windows, it's a simpler matter:
 
 - Open explorer.exe (Win+R `explorer.exe` or Win+E)
-- Right-click `trombone/{trainers/*,*}` and select 'Open with' (then the web browser)
+- Right-click `trombone/{trainers/*.htm(l),*.htm(l)}` and select 'Open with' (then the web browser)
 
 Linux depends on Python3 for the webserver. Install with `pacman` or `apt-get`/`apt` for Arch/Debian respectively...
