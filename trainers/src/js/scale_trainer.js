@@ -42,6 +42,7 @@ const accidentalModeEl       = document.getElementById("accidentalMode");
 
 const startBtn     = document.getElementById("startBtn");
 const resetBtn     = document.getElementById("resetBtn");
+const prevBtn 	   = document.getElementById("prevBtn");
 const nextBtn      = document.getElementById("nextBtn");
 const playPitchBtn = document.getElementById("playPitchBtn");
 
@@ -535,6 +536,16 @@ function rebuildScale(playReference = false){
   }
 }
 
+function prevNote() {
+	if (currentIndex > 0) {
+		currentIndex--;
+		matchStartTime = null;
+		holdBar.style.width = "0%";
+		updateLabels();
+		renderStaff();
+	}
+}
+
 function nextNote(){
   if(currentIndex < currentScale.length - 1){
     currentIndex++;
@@ -720,6 +731,7 @@ function stopMic(){
 
 startBtn.addEventListener("click", startMic);
 resetBtn.addEventListener("click", () => rebuildScale(true));
+prevBtn.addEventListener("click", prevNote);
 nextBtn.addEventListener("click", nextNote);
 playPitchBtn.addEventListener("click", () => {
   playStartingPitch().catch(err => console.error("Reference pitch failed:", err));
