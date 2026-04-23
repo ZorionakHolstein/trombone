@@ -316,12 +316,14 @@ function ensureAudioContext(){
   osc.stop(now + durationSec + 0.03);
 }*/ // completely redoing playStartingPitch to make it sound *not* like shit (hopefully) -- zhao1077
 
-async function playStartingPitch(durationMs = 2000) {
+async function playStartingPitch(durationMs = 900) {
 	if (!currentScale.length) return;
 	await ensureAudioContext();
 
-	const targetMidi = currentScale[0];
-	const freq = 440 + Math.pow(2, (targetMidi - 69) / 12);
+	const targetName = currentScaleNames[0];
+	const parts = splitSpelledName(targetName);
+	const midi = spelledNoteToMidi(parts.pitch, parseInt(parts.octave, 10));
+	const freq = 440 * Math.pow(2, (midi - 69) / 12);
 	const now = audioContext.currentTime;
 	const durationSec = durationMs / 1000;
 
@@ -371,6 +373,9 @@ async function playStartingPitch(durationMs = 2000) {
 	// ... and that oscillator's gain
 	const gain2 = audioContext.createGain();
 	gain2.gain.setValueAtTime(0.05, now);
+	gain2.gain.exponentialRampToValueAtTime(0.05, now + 0.08);
+	gain2.gain.exponentialRampToValueAtTime(0.03, now + 0.25);
+	gain2.gain.exponentialRampToValueAtTime(0.0001, now + durationSec);
 
 	// self explanatory.
 	oscillator.connect(filter);
