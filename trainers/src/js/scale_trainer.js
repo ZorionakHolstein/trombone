@@ -283,13 +283,10 @@ function ensureAudioContext(){
   return Promise.resolve();
 }
 
-async function playStartingPitch(durationMs = 900) {
+async function playMidiNote(midi, durationMs = 900) {
 	if (!currentScale.length) return;
 	await ensureAudioContext();
 
-	const targetName = currentScaleNames[0];
-	const parts = splitSpelledName(targetName);
-	const midi = spelledNoteToMidi(parts.pitch, parseInt(parts.octave, 10));
 	const freq = 440 * Math.pow(2, (midi - 69) / 12);
 	const now = audioContext.currentTime;
 	const durationSec = durationMs / 1000;
@@ -366,6 +363,18 @@ async function playStartingPitch(durationMs = 900) {
 	oscillator2.stop(now + durationSec + 0.05);
 	lfo.start(now);
 	lfo.stop(now + durationSec + 0.05);
+}
+
+async function playStartingPitch(durationMs = 900) {
+    if (!currentScale.length) return;
+
+/*
+*   const targetName = currentScaleNames[0];
+*	const parts = splitSpelledName(targetName);
+*   const midi = spelledNoteToMidi(parts.pitch, parseInt(parts.octave, 10));
+*/
+
+    await playMidiNote(currentScale[0], durationMs);
 }
 	
 function updateLabels(){
@@ -463,6 +472,8 @@ function renderStaff(){
       });
     }
 
+    staveNote._noteIndex = i;
+
     return staveNote;
   });
 
@@ -472,6 +483,29 @@ function renderStaff(){
 
   new VF.Formatter().joinVoices([voice]).format([voice], width - 90);
   voice.draw(context, stave);
+
+    setTimeout(() => {
+        const svg = staffEl.querySelector("svg");
+        if (!svg) return;
+
+        const noteGroups = svg.querySelectorAll(".vf-note");
+        noteGroups.forEach((el, i) => {
+            el.style.cursor = "pointer";
+            el.addEventListener("click", () => {
+                currentIndex = i;
+                const name = currentScaleNames[i];
+                const midi = currentScale[i];
+
+                targetNoteLabel.textContent = name;
+                fingeringText.textContent = showFingeringsEl.checked ? getPosition(name) : "—";
+
+                updateLabels();
+                renderStaff();
+
+                playMidiNote(midi).catch(console.error);
+            });
+        });
+    }, 0);
 
   renderUnderRow(width);
 }
