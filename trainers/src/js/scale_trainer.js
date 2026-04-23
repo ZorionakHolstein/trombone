@@ -486,14 +486,14 @@ function renderStaff(){
         const svg = staffEl.querySelector("svg");
         if (!svg) return;
 
-        const noteHeads = svg.querySelectorAll("vf-nodehead");
+        const noteHeads = svg.querySelectorAll("vf-notehead");
         noteHeads.forEach((el, i) => {
             el.style.cursor = "pointer";
             el.addEventListener("click", (e) => {
                 e.stopPropagation();
 
                 const midi = currentScale[i];
-                const name = currentScalenames[i];
+                const name = currentScaleNames[i];
 
                 currentIndex = i;
                 updateLabels();
