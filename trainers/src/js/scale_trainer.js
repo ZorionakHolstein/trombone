@@ -283,7 +283,7 @@ function ensureAudioContext(){
   return Promise.resolve();
 }
 
-async function playStartingPitch(durationMs = 800){
+async function playStartingPitch(durationMs = 2000){
   if(!currentScale.length) return;
 
   await ensureAudioContext();
@@ -294,17 +294,23 @@ async function playStartingPitch(durationMs = 800){
   const osc = audioContext.createOscillator();
   const gain = audioContext.createGain();
 
-  osc.type = "sine";
+  osc.type = "sawtooth";
   osc.frequency.setValueAtTime(freq, audioContext.currentTime);
 
   const now = audioContext.currentTime;
   const durationSec = durationMs / 1000;
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.8, now + 0.02);
   gain.gain.exponentialRampToValueAtTime(0.0001, now + durationSec);
 
   osc.connect(gain);
   gain.connect(audioContext.destination);
+
+  const real = new Float32Array([0, 1, 0.8, 0.6, 0.4, 0.2,
+	  			 0.1, 0.3, 0.5]);
+  const imag = new Float32Array(real.length);
+  const wave = audioContext.createPeriodicWave(real, imag);
+  osc.setPeriodicWave(wave);
 
   osc.start(now);
   osc.stop(now + durationSec + 0.03);
