@@ -74,6 +74,28 @@ let currentIndex      = 0;
 let matchStartTime    = null;
 let micStarted        = false;
 
+function groupIntoMeasures() {
+	const measures = [];
+	let currentMeasure = [];
+	let beatSum = 0;
+
+	for (let i = 0; i < currentScaleNames.length; i++) {
+		const durObj = currentDurations[i] || { beats: 1 };
+
+		if (beatSum + durObj.beats > 4) {
+			measures.push(currentMeasure);
+			currentMeasure = [];
+			beatSum = 0;
+		}
+	}
+
+	if (currentMeasure.length) {
+		measures.push(currentMeasure);
+	}
+
+	return measures;
+}
+
 function freqToMidi(freq){
   return Math.round(69 + 12 * Math.log2(freq / 440));
 }
