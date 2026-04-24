@@ -191,60 +191,69 @@ function assignAscendingOctaves(spelledSequence, startingOctave){
   return result;
 }
 
-function buildScaleData(keyName, scaleType, startingOctave, octaves = 1, direction = "updown") {
-	const length = 16 + Math.floor(Math.random() * 8);
-	const maxLeap = 7;
-	const minMidi = 40;
-	const maxMidi = 72;
+function buildScaleData(keyName, scaleType, startingOctave) {
+	const phraseCount = parseInt(phraseCountEl.value, 10);
+	const phrases = [];
 
-	const scaleSpelling = buildScaleSpelling(keyName, scaleType);
+	const spelling = buildScaleSpelling(keyName, scaleType);
 
-	const scalePCs = scaleSpelling.map(n => {
+	const scalePCs = spelling.map(n => {
 		const base = noteToSemitone[n[0]];
 		const acc = n.slice(1);
 		return mod12(base + accidentalOffset(acc));
 	});
 
-	let currentMidi = spelledNoteToMidi(scaleSpelling[0], parseInt(startingOctave, 10));
+	let currentMidi = spelledNoteToMidi(spelling[0], parseInt(startingOctave, 10));
+
+	const durationsPool = [
+		{ dur: "8", beats: 0.5 },
+		{ dur: "q", beats: 1 },
+		{ dur: "q.", beats: 1.5, dotted: true },
+		{ dur: "16", beats: 0.25 }
+	];
+
 	const midis = [];
 	const names = [];
+	const durations = [];
 
-	for (let i = 0; i < length; i++) {
-		const motionType = Math.random();
-		let nextMidi = currentMidi;
+	for (let p = 0; p < phraseCount; p++) {
+		let phraseLength = 4 + Math.floor(Math.random() * 4) // 4-7 notes?
+		for (let i = 0; i < phraseLength; i++) {
+			let nextMidi;
+			if (Math.random() < 0.65) {
+				const dir = Math.random() < 0.5 ? -1 : 1;
+				const pc = mod12(currentMidi);
+				let idx = scalePCs.indexOf(pc);
+				if (idx === -1) idx = 0;
 
-		if (motionType < 0.55) {
-			const step = Math.random() < 0.5 ? -1 : 1;
-			const currentPc = mod12(currentMidi);
-			let idx = scalePCs.indexOf(currentPc);
-			if (idx === -1) idx = 0;
+				let nextIdx = (idx + dir + scalePCs.length) % scalePCs.length;
+				const targetPc = scalePCs[nextIdx];
 
-			let nextIdx = idx + step;
-			if (nextIdx < 0) nextIdx = scalePCs.length - 1;
-			if (nextIdx >= scalePCs.length) nextIdx = 0;
-
-			const pc = scalePCs[nextIdx];
-
-			let candidate = currentMidi + step;
-			while (mod12(candidate) !== pc) {
-				candidate += step;
+				nextMidi = currentMidi + dir;
+				while(mod12(nextMidi) !== targetPc) {
+					nextMidi += dir;
+				} 
+			} else {
+				const leap = [2, 3, 4, 5, 7][Math.floor(Math.random() * 5)];
+				const dir = Math.random() < 0.5 ? -1 : 1;
+				nextMidi = currentMidi + leap * dir;
 			}
 
-			nextMidi = candidate;
-		} else {
-			const leap = Math.floor(Math.random() * maxLeap) + 1;
-			const dir = Math.random() < 0.5 ? -1 : 1;
-			nextMidi = currentMidi + (leap * dir);
+			currentMidi = Math.max(40, Math.min(72, nextMidi));
+
+			const durObj = durationsPool[Math.floor(Math.random() * durationsPool.length)];
+
+			midis.push(currentMidi);
+			names.push(midiToPreferredName(currentMidi));
+			durations.push(durObj);
 		}
 
-		if (nextMidi < minMidi) nextMidi = currentMidi + Math.abs(nextMidi - minMidi);
-		if (nextMidi > maxMidi) nextMidi = currentMidi - Math.abs(nextMidi - maxMidi);
-
-		currentMidi = nextMidi;
-
-		midis.push(currentMidi);
-		names.push(midiToPreferredName(currentMidi));
+		if (p < phraseCount - 1) {
+			durations[durations.length - 1].phraseEnd = true;
+		}
 	}
+
+	currentDurations = durations;
 
 	return {
 		names,
@@ -486,11 +495,18 @@ function renderStaff(){
       ? getDisplayAccidentalForKeySignature(name, keySignatureName)
       : accidental;
 
+    const durObj = currentDurations[i] || { dur: "q", beats: 1 };
+	  const isDotted = durObj.dur.endsWith(".");
+	  const baseDur = isDotted ? durObj.dur.replace(".", "") : durObj.dur;
+
     const staveNote = new VF.StaveNote({
       clef: "bass",
       keys: [vexKeyFromSpelled(name, false)],
-      duration: "q"
+      duration: baseDur,
     });
+	  if (isDotted) {
+		  VF.Dot.buildAndAttach([staveNote], { all: true });
+	  }
 
     if(displayAccidental){
       staveNote.addModifier(new VF.Accidental(displayAccidental), 0);
@@ -690,7 +706,15 @@ function processPitch(){
   detectedWrittenLabel.textContent = staffName;
 
   const targetMidi = currentScale[currentIndex];
-  const holdRequired = parseInt(holdTimeEl.value, 10) || 600;
+	let holdRequired;
+	if (useTempoEl.checked) {
+		const bpm = parseInt(tempoEl.value, 10) || 90;
+		const beatMs = 60000 / bpm;
+		const durObj = currentDurations[currentIndex] || { beats: 1 };
+		holdRequired = durObj.beats * beatsMs;
+	} else {
+		holdRequired = 600;
+	}
 
   if(detectedStaffMidi === targetMidi){
     updateMatchStatus("Correct", "good");
@@ -763,7 +787,16 @@ function stopMic(){
 }
 
 startBtn.addEventListener("click", startMic);
-resetBtn.addEventListener("click", () => rebuildScale(true));
+resetBtn.addEventListener("click", () => {
+	currentIndex = 0;
+	matchStartTime = null;
+	holdBar.style.width = "0%";
+	updateLabels();
+	renderStaff();
+});
+generateBtn.addEventListener("click", () => {
+	rebuildScale(true);
+});
 prevBtn.addEventListener("click", prevNote);
 nextBtn.addEventListener("click", nextNote);
 playPitchBtn.addEventListener("click", () => {
