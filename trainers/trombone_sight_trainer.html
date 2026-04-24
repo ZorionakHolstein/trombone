@@ -104,8 +104,30 @@
         </div>
 
         <div class="control">
-          <label for="holdTime">Hold Time (ms)</label>
-          <input id="holdTime" type="number" min="150" max="2000" step="50" value="600">
+            <label for="tempo">Tempo</label>
+            <input id="tempo" type="number" min="40" max="200" step="1" value=90">
+        </div>
+
+        <div class=checkrow">
+            <input type="checkbox" id="useTempo" checked>
+            <label for="useTempo">Use tempo timing</label>
+        </div>
+
+        <div class="control">
+            <label for="phraseCount">Etude length (phrases)</label>
+            <select id="phraseCount">
+                <option value="2">A</option>
+                <option value="3">AA</option>
+                <option value="4">B</option>
+                <option value="6">C</option>
+                <option value="10">D</option>
+                <option value="20">E</option>
+            </select>
+        </div>
+
+        <div class="control">
+            <label>&nbsp;</label>
+            <button id="generateBtn" class="primary">Generate Etude</button>
         </div>
 
         <div class="control">

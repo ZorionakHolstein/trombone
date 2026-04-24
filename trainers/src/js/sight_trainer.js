@@ -55,6 +55,13 @@ const fingeringBox         = document.getElementById("fingeringBox");
 const fingeringText        = document.getElementById("fingeringText");
 const holdBar              = document.getElementById("holdBar");
 
+const tempoEl       = document.getElementById("tempo");
+const useTempoEl    = document.getElementById("useTempo");
+const phraseCountEl = document.getElementById("phraseCount");
+const generateBtn   = document.getElementById("generateBtn");
+
+let currentDurations = [];
+
 let audioContext = null;
 let analyser     = null;
 let mediaStream  = null;
