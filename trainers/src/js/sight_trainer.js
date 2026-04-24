@@ -184,36 +184,65 @@ function assignAscendingOctaves(spelledSequence, startingOctave){
   return result;
 }
 
-function buildScaleData(keyName, scaleType, startingOctave, octaves = 1, direction = "updown"){
-  const ascendingSpelled = buildAscendingSpelledSequence(keyName, scaleType, octaves);
-  const ascendingWithOctaves = assignAscendingOctaves(ascendingSpelled, startingOctave);
+function buildScaleData(keyName, scaleType, startingOctave, octaves = 1, direction = "updown") {
+	const length = 16 + Math.floor(Math.random() * 8);
+	const maxLeap = 7;
+	const minMidi = 40;
+	const maxMidi = 72;
 
-  const upNames = ascendingWithOctaves.map(n => n.name + n.octave);
-  const upMidis = ascendingWithOctaves.map(n => spelledNoteToMidi(n.name, n.octave));
+	const scaleSpelling = buildScaleSpelling(keyName, scaleType);
 
-  if(direction === "up"){
-    return {
-      names: upNames,
-      midis: upMidis
-    };
-  }
+	const scalePCs = scaleSpelling.map(n => {
+		const base = noteToSemitone[n[0]];
+		const acc = n.slice(1);
+		return mod12(base + accidentalOffset(acc));
+	});
 
-  let downNames = upNames.slice(0, -1).reverse();
-  let downMidis = upMidis.slice(0, -1).reverse();
+	let currentMidi = spelledNoteToMidi(scaleSpelling[0], parseInt(startingOctave, 10));
+	const midis = [];
+	const names = [];
 
-  if(scaleType === "melodic_minor"){
-    const descendingSpelled = buildAscendingSpelledSequence(keyName, "natural_minor", octaves);
-    const descendingWithOctaves = assignAscendingOctaves(descendingSpelled, startingOctave);
-    const descendingNames = descendingWithOctaves.map(n => n.name + n.octave);
-    const descendingMidis = descendingWithOctaves.map(n => spelledNoteToMidi(n.name, n.octave));
-    downNames = descendingNames.slice(0, -1).reverse();
-    downMidis = descendingMidis.slice(0, -1).reverse();
-  }
+	for (let i = 0; i < length; i++) {
+		const motionType = Math.random();
+		let nextMidi = currentMidi;
 
-  return {
-    names: upNames.concat(downNames),
-    midis: upMidis.concat(downMidis)
-  };
+		if (motionType < 0.55) {
+			const step = Math.random() < 0.5 ? -1 : 1;
+			const currentPc = mod12(currentMidi);
+			let idx = scalePCs.indexOf(currentPc);
+			if (idx === -1) idx = 0;
+
+			let nextIdx = idx + step;
+			if (nextIdx < 0) nextIdx = scalePCs.length - 1;
+			if (nextIdx >= scalePCs.length) nextIdx = 0;
+
+			const pc = scalePCs[nextIdx];
+
+			let candidate = currentMidi + step;
+			while (mod12(candidate) !== pc) {
+				candidate += step;
+			}
+
+			nextMidi = candidate;
+		} else {
+			const leap = Math.floor(Math.random() * maxLeap) + 1;
+			const dir = Math.random() < 0.5 ? -1 : 1;
+			nextMidi = currentMidi + (leap * dir);
+		}
+
+		if (nextMidi < minMidi) nextMidi = currentMidi + Math.abs(nextMidi - minMidi);
+		if (nextMidi > maxMidi) nextMidi = currentMidi - Math.abs(nextMidi - maxMidi);
+
+		currentMidi = nextMidi;
+
+		midis.push(currentMidi);
+		names.push(midiToPreferredName(currentMidi));
+	}
+
+	return {
+		names,
+		midis
+	};
 }
 
 function splitSpelledName(fullName){

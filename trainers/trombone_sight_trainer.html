@@ -1,11 +1,199 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8" />
-        <link rel="stylesheet" href="src/css/sight_trainer.css">
-        <title>Sight Reading Trainer</title>
-    </head>
-    <body>
-        <h1>Placeholder</h1>
-    </body>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trombone Scale Trainer</title>
+  <link rel="stylesheet" href="src/css/sight_trainer.css">
+  <script src="https://unpkg.com/vexflow@4.2.3/build/cjs/vexflow.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Trombone Etude Trainer</h1>
+    <div class="topnote">
+    </div>
+
+    <div class="panel">
+      <div class="controls">
+        <div class="control">
+          <label for="scaleKey">Scale</label>
+          <select id="scaleKey">
+            <optgroup label="Major">
+              <option value="C|major">C Major</option>
+              <option value="G|major">G Major</option>
+              <option value="D|major">D Major</option>
+              <option value="A|major">A Major</option>
+              <option value="E|major">E Major</option>
+              <option value="B|major">B Major</option>
+              <option value="F#|major">F# Major</option>
+              <option value="F|major">F Major</option>
+              <option value="Bb|major">Bb Major</option>
+              <option value="Eb|major">Eb Major</option>
+              <option value="Ab|major">Ab Major</option>
+              <option value="Db|major">Db Major</option>
+            </optgroup>
+            <optgroup label="Natural Minor">
+              <option value="A|natural_minor">A Natural Minor</option>
+              <option value="E|natural_minor">E Natural Minor</option>
+              <option value="B|natural_minor">B Natural Minor</option>
+              <option value="F#|natural_minor">F# Natural Minor</option>
+              <option value="C#|natural_minor">C# Natural Minor</option>
+              <option value="D|natural_minor">D Natural Minor</option>
+              <option value="G|natural_minor">G Natural Minor</option>
+              <option value="C|natural_minor">C Natural Minor</option>
+              <option value="F|natural_minor">F Natural Minor</option>
+              <option value="Bb|natural_minor">Bb Natural Minor</option>
+              <option value="Eb|natural_minor">Eb Natural Minor</option>
+              <option value="Ab|natural_minor">Ab Natural Minor</option>
+            </optgroup>
+            <optgroup label="Harmonic Minor">
+              <option value="A|harmonic_minor">A Harmonic Minor</option>
+              <option value="E|harmonic_minor">E Harmonic Minor</option>
+              <option value="B|harmonic_minor">B Harmonic Minor</option>
+              <option value="F#|harmonic_minor">F# Harmonic Minor</option>
+              <option value="C#|harmonic_minor">C# Harmonic Minor</option>
+              <option value="D|harmonic_minor">D Harmonic Minor</option>
+              <option value="G|harmonic_minor">G Harmonic Minor</option>
+              <option value="C|harmonic_minor">C Harmonic Minor</option>
+              <option value="F|harmonic_minor">F Harmonic Minor</option>
+              <option value="Bb|harmonic_minor">Bb Harmonic Minor</option>
+              <option value="Eb|harmonic_minor">Eb Harmonic Minor</option>
+              <option value="Ab|harmonic_minor">Ab Harmonic Minor</option>
+            </optgroup>
+            <optgroup label="Melodic Minor">
+              <option value="A|melodic_minor">A Melodic Minor</option>
+              <option value="E|melodic_minor">E Melodic Minor</option>
+              <option value="B|melodic_minor">B Melodic Minor</option>
+              <option value="F#|melodic_minor">F# Melodic Minor</option>
+              <option value="C#|melodic_minor">C# Melodic Minor</option>
+              <option value="D|melodic_minor">D Melodic Minor</option>
+              <option value="G|melodic_minor">G Melodic Minor</option>
+              <option value="C|melodic_minor">C Melodic Minor</option>
+              <option value="F|melodic_minor">F Melodic Minor</option>
+              <option value="Bb|melodic_minor">Bb Melodic Minor</option>
+              <option value="Eb|melodic_minor">Eb Melodic Minor</option>
+              <option value="Ab|melodic_minor">Ab Melodic Minor</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="startOctave">Starting Octave</label>
+          <select id="startOctave">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3" selected>3</option>
+            <option value="4">4</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="octaveMode">Scale Length</label>
+          <select id="octaveMode">
+            <option value="1">1 Octave</option>
+            <option value="2">2 Octaves</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="directionMode">Direction</label>
+          <select id="directionMode">
+            <option value="up">Up Only</option>
+            <option value="updown" selected>Up and Down</option>
+          </select>
+        </div>
+
+        <div class="control">
+          <label for="holdTime">Hold Time (ms)</label>
+          <input id="holdTime" type="number" min="150" max="2000" step="50" value="600">
+        </div>
+
+        <div class="control">
+          <label>&nbsp;</label>
+          <button id="startBtn" class="primary">Start Mic</button>
+        </div>
+
+        <div class="control">
+          <label>&nbsp;</label>
+          <button id="resetBtn" class="secondary">Restart Scale</button>
+        </div>
+
+        <div class="control">
+          <label>&nbsp;</label>
+          <button id="prevBtn" class="secondary">Previous Note</button>
+        </div>
+
+        <div class="control">
+          <label>&nbsp;</label>
+          <button id="nextBtn" class="secondary">Next Note</button>
+        </div>
+
+        <div class="control">
+          <label>&nbsp;</label>
+          <button id="playPitchBtn" class="secondary">Play Starting Pitch</button>
+        </div>
+      </div>
+
+      <div class="controls" style="margin-top:14px;">
+        <div class="checkrow">
+          <input type="checkbox" id="showFingerings" checked>
+          <label for="showFingerings" style="font-weight:400;">Show trombone positions</label>
+        </div>
+        <div class="checkrow">
+          <input type="checkbox" id="highlightAccidentals" checked>
+          <label for="highlightAccidentals" style="font-weight:400;">Highlight accidentals</label>
+        </div>
+        <div class="control" style="max-width:280px;">
+          <label for="accidentalMode">Accidental Display</label>
+          <select id="accidentalMode">
+            <option value="inline" selected>Show accidentals next to notes</option>
+            <option value="keysig">Use key signature at beginning</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="status-grid">
+        <div class="pill">
+          <div class="small">Target Concert Note</div>
+          <div class="big" id="targetNoteLabel">—</div>
+        </div>
+        <div class="pill">
+          <div class="small">Detected Concert Pitch</div>
+          <div class="big" id="detectedConcertLabel">—</div>
+        </div>
+        <div class="pill">
+          <div class="small">Detected Staff Note</div>
+          <div class="big" id="detectedWrittenLabel">—</div>
+        </div>
+        <div class="pill">
+          <div class="small">Match Status</div>
+          <div class="big" id="matchStatus">Waiting</div>
+        </div>
+        <div class="pill">
+          <div class="small">Progress</div>
+          <div class="big" id="progressText">0 / 0</div>
+        </div>
+      </div>
+
+      <div class="progress">
+        <div class="bar" id="holdBar"></div>
+      </div>
+
+      <div id="fingeringBox" class="fingering-box">
+        <strong>Current Trombone Position:</strong> <span id="fingeringText">—</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="notationWrap">
+        <div id="notationInner" class="notationInner">
+          <div id="staff"></div>
+          <div id="underRow"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="src/js/sight_trainer.js"></script>
+</body>
 </html>
