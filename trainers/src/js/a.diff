@@ -1,0 +1,65 @@
+diff --git a/sight_trainer.js b/sight_trainer.js
+index 0000000..1111111 100644
+--- a/sight_trainer.js
++++ b/sight_trainer.js
+@@ -250,6 +250,20 @@ function vexKeyFromSpelled(fullName, includeAccidental = true){
+   return `${letter}${accidental}/${octave}`;
+ }
+ 
++// key generator
++function safeKey(name) {
++	if (!name || typeof name !== "string") return "c/4";
++
++	const match = name.match(/^([A-G])(bb|##|b|#)?(-?\d)$/);
++	if (!match) return "c/4";
++
++	const letter = match[1].toLowerCase();
++	const accidental = match[2] || "";
++  	const octave = match[3];
++
++  	return `${letter}${accidental}/${octave}`;
++}
++
+ function isAccidentalName(fullName){
+   const parts = splitSpelledName(fullName);
+   return parts.pitch.includes("#") || parts.pitch.includes("b");
+@@ -430,7 +444,7 @@ function buildScaleData(keyName, scaleType, startingOctave) {
+ 
+                 nextMidi = currentMidi + dir;
+-                while (mod12(nextmidi) !== targetPc) {
++                while (mod12(nextMidi) !== targetPc) {
+                     nextMidi += dir;
+                 }
+             } else {
+@@ -620,20 +634,10 @@ function renderStaff() {
+                 if (isRest) {
+                     keys = ["b/4"];
+                 } else {
+-                    try {
+-                        keys = [vexKeyFromSpelled(name, true)];
+-                        if (!keys[0] || keys[0].includes("undefined")) {
+-                            keys = ["c/4"];
+-                        }
+-                    } catch {
+-                        keys = ["c/4"];
+-                    }
++                    keys = [safeKey(name)];
+                 }
+ 
+                 const note = new VF.StaveNote({
+                     clef: "bass",
+                     keys,
+                     duration
+                 });
+@@ -670,7 +674,7 @@ function renderStaff() {
+             while (beatSum < 4) {
+                 let remaining = 4 - beatSum;
+                 let dur, beats;
+@@ -706,7 +710,7 @@ function renderStaff() {
+             const voice = new VF.Voice({
+                 numBeats: 4,
+                 beatValue: 4
+-            }).setStrict(false);
++            }).setStrict(true);
+ 
+             voice.addTickables(notes);

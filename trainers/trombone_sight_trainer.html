@@ -109,10 +109,6 @@
             <input id="tempo" type="number" min="40" max="200" step="1" value=90">
         </div>
 
-        <div class=checkrow">
-            <input type="checkbox" id="useTempo" checked>
-            <label for="useTempo">Use tempo timing</label>
-        </div>
 
         <div class="control">
             <label for="phraseCount">Etude length (phrases)</label>
@@ -128,7 +124,7 @@
 
         <div class="control">
             <label>&nbsp;</label>
-            <button id="generateBtn" class="primary">Generate Etude</button>
+            <button id="generateBtn" class="secondary">Generate Etude</button>
         </div>
 
         <div class="control">
@@ -162,10 +158,17 @@
           <input type="checkbox" id="showFingerings" checked>
           <label for="showFingerings" style="font-weight:400;">Show trombone positions</label>
         </div>
+
+        <div class=checkrow">
+            <input type="checkbox" id="useTempo" checked>
+            <label for="useTempo">Use tempo timing</label>
+        </div>
+	
         <div class="checkrow">
           <input type="checkbox" id="highlightAccidentals" checked>
           <label for="highlightAccidentals" style="font-weight:400;">Highlight accidentals</label>
         </div>
+
         <div class="control" style="max-width:280px;">
           <label for="accidentalMode">Accidental Display</label>
           <select id="accidentalMode">

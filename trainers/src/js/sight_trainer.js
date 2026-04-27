@@ -81,11 +81,20 @@ function groupIntoMeasures() {
 
 	for (let i = 0; i < currentScaleNames.length; i++) {
 		const durObj = currentDurations[i] || { beats: 1 };
-
+		if (durObj.beats === 0) continue;
 		if (beatSum + durObj.beats > 4) {
 			measures.push(currentMeasure);
 			currentMeasure = [];
 			beatSum = 0;
+		}
+
+		currentMeasure.push(i);
+		beatSum += durObj.beats;
+
+		if (Math.abs(beatSum - 4) < 0.001) {
+			measures.push(currentMeasure);
+			currentMeasure = [];
+			beatSum  = 0;
 		}
 	}
 
@@ -94,6 +103,19 @@ function groupIntoMeasures() {
 	}
 
 	return measures;
+}
+
+function safeKey(name) {
+	if (!name || typeof name !== "string") return "c/4";
+
+	const match = name.match(/^([A-G])(bb|##|b|#)?(-?\d)$/);
+	if (!match) return "c/4";
+
+	const letter = match[1].toLowerCase();
+	const accidental = match[2] || "";
+	const octave = match[3];
+
+	return `${letter}${accidental}/${octave}`;
 }
 
 function freqToMidi(freq){
@@ -228,10 +250,12 @@ function buildScaleData(keyName, scaleType, startingOctave) {
 	let currentMidi = spelledNoteToMidi(spelling[0], parseInt(startingOctave, 10));
 
 	const durationsPool = [
+		{ dur: "16", beats: 0.25 },
 		{ dur: "8", beats: 0.5 },
 		{ dur: "q", beats: 1 },
 		{ dur: "q.", beats: 1.5, dotted: true },
-		{ dur: "16", beats: 0.25 }
+		{ dur: "h", beats: 2 },
+		{ dur: "h.", beats: 3, dotted: true }
 	];
 
 	const midis = [];
@@ -239,12 +263,16 @@ function buildScaleData(keyName, scaleType, startingOctave) {
 	const durations = [];
 
 	for (let p = 0; p < phraseCount; p++) {
-		let phraseLength = 4 + Math.floor(Math.random() * 4) // 4-7 notes?
-		for (let i = 0; i < phraseLength; i++) {
+		let beatsRemaining = 4;
+		while (beatsRemaining > 0) {
+			const validDurations = durationsPool.filter(d => d.beats <= beatsRemaining);
+			const durObj = validDurations[Math.floor(Math.random() * validDurations.length)];
+
 			let nextMidi;
+
 			if (Math.random() < 0.65) {
 				const dir = Math.random() < 0.5 ? -1 : 1;
-				const pc = mod12(currentMidi);
+				const pc  = mod12(currentMidi);
 				let idx = scalePCs.indexOf(pc);
 				if (idx === -1) idx = 0;
 
@@ -252,26 +280,32 @@ function buildScaleData(keyName, scaleType, startingOctave) {
 				const targetPc = scalePCs[nextIdx];
 
 				nextMidi = currentMidi + dir;
-				while(mod12(nextMidi) !== targetPc) {
+				while (mod12(nextMidi) !== targetPc) {
 					nextMidi += dir;
-				} 
+				}
 			} else {
-				const leap = [2, 3, 4, 5, 7][Math.floor(Math.random() * 5)];
-				const dir = Math.random() < 0.5 ? -1 : 1;
-				nextMidi = currentMidi + leap * dir;
+				const leap = [2,3,4,5,7][Math.floor(Math.random() * 5)];
+				const dir  = Math.random() < 0.5 ? -1 : 1;
+				nextMidi   = currentMidi + leap * dir;
 			}
-
+			
 			currentMidi = Math.max(40, Math.min(72, nextMidi));
-
-			const durObj = durationsPool[Math.floor(Math.random() * durationsPool.length)];
-
 			midis.push(currentMidi);
 			names.push(midiToPreferredName(currentMidi));
 			durations.push(durObj);
+
+			beatsRemaining -= durObj.beats;
 		}
 
 		if (p < phraseCount - 1) {
 			durations[durations.length - 1].phraseEnd = true;
+			/* midis.push(null);
+			names.push(null);
+			durations.push({
+				dur: "8r",
+				beats: 0.5,
+				isRest: true
+			}); */
 		}
 	}
 
@@ -489,97 +523,121 @@ function renderUnderRow(width){
   });
 }
 
-function renderStaff(){
-  staffEl.innerHTML = "";
+function renderStaff() {
+	staffEl.innerHTML = "";
 
-  const width = Math.max(1080, /* 220 + */ (currentScale.length * 64));
-  const height = 220;
-  const useKeySignature = accidentalModeEl.value === "keysig";
-  const { tonic: selectedTonic, scaleType: selectedScaleType } = parseScaleSelection(scaleKeyEl.value);
-  const keySignatureName = getKeySignatureName(selectedTonic, selectedScaleType);
+	const renderer = new VF.Renderer(staffEl, VF.Renderer.Backends.SVG);
+	const measures = groupIntoMeasures();
+	const measuresPerLine = 4;
+	const staveWidth = 220;
+	const lineHeight = 140;
+	const totalLines = Math.ceil(measures.length / measuresPerLine);
+	const width = measuresPerLine * staveWidth + 40;
+	const height = totalLines * lineHeight + 40;
+	
+	renderer.resize(width, height);
 
-  const renderer = new VF.Renderer(staffEl, VF.Renderer.Backends.SVG);
-  renderer.resize(width, height);
-  const context = renderer.getContext();
+	const context = renderer.getContext();
 
-  const stave = new VF.Stave(20, 40, width - 40);
-  stave.addClef("bass");
-  if(useKeySignature){
-    stave.addKeySignature(keySignatureName);
-  }
-  stave.addTimeSignature("4/4");
-  stave.setContext(context).draw();
+	let measureIndex = 0;
 
-  const notes = currentScaleNames.map((name, i) => {
-    const parts = splitSpelledName(name);
-    const accidental = parts.pitch.slice(1);
-    const displayAccidental = useKeySignature
-      ? getDisplayAccidentalForKeySignature(name, keySignatureName)
-      : accidental;
+	for (let line = 0; line < totalLines; line++) {
+		let x = 20;
+		const y = 40 + line * lineHeight;
 
-    const durObj = currentDurations[i] || { dur: "q", beats: 1 };
-	  const isDotted = durObj.dur.endsWith(".");
-	  const baseDur = isDotted ? durObj.dur.replace(".", "") : durObj.dur;
+		for (let m = 0; m < measuresPerLine; m++) {
+			if (measureIndex >= measures.length) break;
 
-    const staveNote = new VF.StaveNote({
-      clef: "bass",
-      keys: [vexKeyFromSpelled(name, false)],
-      duration: baseDur,
-    });
-	  if (isDotted) {
-		  VF.Dot.buildAndAttach([staveNote], { all: true });
-	  }
+			const noteIndices = measures[measureIndex];
+			const stave = new VF.Stave(x, y, staveWidth);
 
-    if(displayAccidental){
-      staveNote.addModifier(new VF.Accidental(displayAccidental), 0);
-    }
+			if (m === 0) {
+				stave.addClef("bass").addTimeSignature("4/4");
+			}
 
-    if(i === currentIndex){
-      staveNote.setStyle({
-        fillStyle: "#2563eb",
-        strokeStyle: "#2563eb"
-      });
-    } else if(highlightAccidentalsEl.checked && accidental){
-      staveNote.setStyle({
-        fillStyle: "#f59e0b",
-        strokeStyle: "#f59e0b"
-      });
-    }
+			stave.setContext(context).draw();
 
-    return staveNote;
-  });
+			let notes = [];
+			let beatSum = 0;
 
-  const voice = new VF.Voice({ numBeats: notes.length, beatValue: 4 });
-  voice.setStrict(false);
-  voice.addTickables(notes);
+			noteIndices.forEach(i => {
+				const name = currentScaleNames[i];
+				const durObj = currentDurations[i] || { dur: "q", beats: 1 };
+				const isRest = durObj.isRest;
+				const isDotted = durObj.dur.includes(".");
+				const baseDur = durObj.dur.replace(".", "").replace("r", "");
+				const duration = isRest ? baseDur + "r" : baseDur;
+				let keys;
+				if (isRest) {
+					keys = ["b/4"];
+				} else {
+					keys = [safeKey(name)];
+				}
 
-  new VF.Formatter().joinVoices([voice]).format([voice], width - 90);
-  voice.draw(context, stave);
+				const note = new VF.StaveNote({
+					clef: "bass",
+					keys,
+					duration
+				});
 
-    setTimeout(() => {
-        const svg = staffEl.querySelector("svg");
-        if (!svg) return;
+				if (isDotted) {
+					VF.Dot.buildAndAttach([note], { all: true });
+				}
 
-        const noteHeads = svg.querySelectorAll(".vf-notehead");
-        noteHeads.forEach((el, i) => {
-            el.style.cursor = "pointer";
-            el.addEventListener("click", (e) => {
-                e.stopPropagation();
+				if (!isRest && i === currentIndex) {
+					note.setStyle({
+						fillStyle: "#2563eb",
+						strokeStyle: "#2563eb"
+					});
+				}
 
-                const midi = currentScale[i];
-                const name = currentScaleNames[i];
+				notes.push(note);
+				beatSum += durObj.beats;
+			});
 
-                currentIndex = i;
-                updateLabels();
+			while (Math.round(beatSum * 1000) / 1000 < 4) {
+				let remaining = 4 - beatSum;
+				let dur, beats;
 
-                renderStaff();
+				if (remaining >= 2) {
+					dur = "h";
+					beats = 2;
+				} else if (remaining >= 1) {
+					dur = "q";
+					beats = 1;
+				} else if (remaining >= 0.5) {
+					dur = "8";
+					beats = 0.5;
+				} else {
+					dur = "16";
+					beats = 0.25;
+				}
 
-                playMidiNote(midi).catch(console.error);
-            });
-        });
-    }, 0);
+				const rest = new VF.StaveNote({
+					clef: "bass",
+					keys: ["b/4"],
+					duration: dur + "r"
+				});
 
-  renderUnderRow(width);
+				notes.push(rest);
+				beatSum += beats;
+			}
+
+			const voice = new VF.Voice({
+				numBeats: 4,
+				beatValue: 4
+			}).setStrict(false);
+
+			voice.addTickables(notes);
+
+			const beams = VF.Beam.generateBeams(notes);
+			new VF.Formatter().joinVoices([voice]). format([voice], staveWidth - 20);
+			voice.draw(context, stave);
+			beams.forEach(b => b.setContext(context).draw());
+			x += staveWidth;
+			measureIndex++;
+		}
+	}
 }
 
 function rebuildScale(playReference = false){
@@ -733,7 +791,7 @@ function processPitch(){
 		const bpm = parseInt(tempoEl.value, 10) || 90;
 		const beatMs = 60000 / bpm;
 		const durObj = currentDurations[currentIndex] || { beats: 1 };
-		holdRequired = durObj.beats * beatsMs;
+		holdRequired = durObj.beats * beatMs;
 	} else {
 		holdRequired = 600;
 	}
